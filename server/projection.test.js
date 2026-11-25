@@ -102,3 +102,41 @@ test('proyección, recurrencias, ahorro y administración usan datos aislados', 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('producción inicializa una vez y conserva el usuario y los datos tras reiniciar', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gastos-production-test-'));
+  const dbPath = join(dir, 'private', 'saldo.db');
+  const port = 21000 + Math.floor(Math.random() * 20000);
+  const base = `http://127.0.0.1:${port}`;
+  const baseEnv = { ...process.env, NODE_ENV: 'production', DB_PATH: dbPath, PORT: String(port) };
+  let server;
+  async function start(env) {
+    server = spawn(process.execPath, ['server/index.js'], { env, stdio: 'ignore' });
+    for (let i = 0; i < 60; i++) { try { if ((await fetch(`${base}/api/health`)).ok) return; } catch {} await delay(100); }
+    throw new Error('El servidor no inició');
+  }
+  async function stop() {
+    if (!server) return;
+    if (server.exitCode === null) { const exited = new Promise((resolve) => server.once('exit', resolve)); server.kill(); await exited; }
+    server = null;
+  }
+  try {
+    const forbidden = spawnSync(process.execPath, ['server/index.js'], { env: baseEnv, timeout: 5000 });
+    assert.notEqual(forbidden.status, 0);
+    await start({ ...baseEnv, INITIALIZE_DB: 'true', INITIAL_ADMIN_USERNAME: 'tester', INITIAL_ADMIN_PASSWORD: 'test-password' });
+    const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'tester', password: 'test-password' }) });
+    assert.equal(login.status, 200);
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const created = await fetch(`${base}/api/transactions`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify({ type: 'income', description: 'Inicial', amount: 42, currency: 'ARS', category: 'Otros', transactionDate: '2026-11-25' }) });
+    assert.equal(created.status, 201);
+    await stop();
+    await start(baseEnv);
+    const again = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'tester', password: 'test-password' }) });
+    assert.equal(again.status, 200);
+    const rows = await fetch(`${base}/api/transactions`, { headers: { cookie: again.headers.get('set-cookie').split(';')[0] } });
+    assert.equal((await rows.json())[0].amount, 42);
+  } finally {
+    await stop();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

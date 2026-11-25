@@ -47,7 +47,7 @@ En ese caso toda la aplicación se sirve desde `http://localhost:3001`.
 
 Para publicar en Internet se necesita un servidor compatible con Node.js 24, HTTPS y almacenamiento persistente para SQLite. Configurá `NODE_ENV=production` para que la cookie de sesión requiera HTTPS y mantené `data/gastos.db` y los archivos WAL en un volumen persistente. Hacé copias de seguridad coherentes de SQLite antes de migrar datos. El administrador de base de datos está limitado a conexiones locales; el resto de la aplicación requiere autenticación. Este proyecto no queda publicado automáticamente al ejecutar estos comandos.
 
-Para Hostinger Web/Cloud, seguí las instrucciones de [HOSTINGER.md](HOSTINGER.md). En producción es obligatorio configurar `DB_PATH` con una base existente fuera del código desplegado.
+Para Hostinger Web/Cloud, seguí las instrucciones de [HOSTINGER.md](HOSTINGER.md). En producción es obligatorio configurar `DB_PATH` fuera del código desplegado; para crear una base nueva se usa una habilitación temporal de inicialización.
 
 ## Datos
 

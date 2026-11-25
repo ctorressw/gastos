@@ -9,8 +9,12 @@ const dbPath = process.env.DB_PATH || join(dataDir, 'gastos.db');
 if (process.env.NODE_ENV === 'production') {
   const resolved = resolve(dbPath);
   const projectRoot = resolve(serverDir, '..');
-  if (!process.env.DB_PATH || !isAbsolute(process.env.DB_PATH) || resolved.startsWith(projectRoot + sep) || /(?:^|[\\/])(hbuilds|public_html)(?:[\\/]|$)/i.test(resolved) || !existsSync(resolved)) {
-    throw new Error('En producción DB_PATH debe apuntar a una base existente, fuera del código, hbuilds y public_html.');
+  if (!process.env.DB_PATH || !isAbsolute(process.env.DB_PATH) || resolved.startsWith(projectRoot + sep) || /(?:^|[\\/])(hbuilds|public_html)(?:[\\/]|$)/i.test(resolved)) {
+    throw new Error('En producción DB_PATH debe ser una ruta absoluta fuera del código, hbuilds y public_html.');
+  }
+  if (!existsSync(resolved)) {
+    if (process.env.INITIALIZE_DB !== 'true') throw new Error('No existe la base en DB_PATH. Para una instalación nueva usá INITIALIZE_DB=true una sola vez.');
+    mkdirSync(dirname(resolved), { recursive: true, mode: 0o700 });
   }
 } else {
   mkdirSync(dirname(dbPath), { recursive: true });

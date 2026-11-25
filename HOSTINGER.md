@@ -12,10 +12,22 @@ En hPanel, crear una **Web App** y escoger Express (no Vite estático). En la co
 - Build: `npm run build`.
 - Archivo de entrada: `server/index.js`; comando de inicio, si se solicita: `npm start`.
 - Variable `NODE_ENV`: `production`.
-- Variable `DB_PATH`: ruta absoluta a un archivo SQLite existente, ubicado en una carpeta privada y persistente confirmada para el plan.
+- Variable `DB_PATH`: ruta absoluta al archivo SQLite, en una carpeta privada y persistente confirmada para el plan. Por ejemplo, si Hostinger confirma esa carpeta, `/home/TU_USUARIO/saldo-data/gastos.db` (reemplazar `TU_USUARIO` por el usuario real).
 - Usar el puerto `PORT` asignado por Hostinger; no fijarlo manualmente.
 
-En producción el servidor rechaza arrancar si no existe `DB_PATH` o si apunta al código, `hbuilds` o `public_html`. Esto evita crear accidentalmente una base vacía al publicar o actualizar. El administrador de base de datos de la interfaz está limitado a conexiones locales y no estará disponible desde la web pública.
+En producción `DB_PATH` es obligatoria y no puede apuntar al código, `hbuilds` o `public_html`. Si la base no existe, sólo se crea cuando `INITIALIZE_DB=true`. El administrador de base de datos de la interfaz está limitado a conexiones locales y no estará disponible desde la web pública.
+
+## Crear una base nueva automáticamente
+
+Para empezar sin copiar los datos existentes, configurá temporalmente estas variables en hPanel, además de `NODE_ENV` y `DB_PATH`:
+
+- `INITIALIZE_DB`: `true`.
+- `INITIAL_ADMIN_USERNAME`: el usuario inicial, por ejemplo `cris`.
+- `INITIAL_ADMIN_PASSWORD`: su contraseña, ingresada directamente en hPanel, sin comillas.
+
+Aplicá las variables y desplegá esta versión. La base y sus tablas se crean al iniciar; el usuario inicial sólo se crea si la base no tiene usuarios. Estos parámetros no sustituyen una base existente ni cambian contraseñas de usuarios existentes. La base nueva empieza sin tus movimientos locales. Si falta un usuario inicial válido el servidor informa el problema en el registro.
+
+Después de comprobar que podés ingresar y guardar datos, quitá `INITIALIZE_DB`, `INITIAL_ADMIN_USERNAME` e `INITIAL_ADMIN_PASSWORD` de las variables de Hostinger y reiniciá. Así se evita crear otra base vacía accidentalmente si cambia la ruta y se retira la contraseña de la configuración. Reiniciá y desplegá una vez más para comprobar que los datos persisten. Si obtenés un 503, revisá los Runtime logs y los Build logs de Hostinger antes de cambiar la configuración.
 
 ## Llevar los datos existentes
 

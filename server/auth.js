@@ -30,6 +30,12 @@ function validCredentials(username, password) {
 }
 
 export function installAuth(app) {
+  if (process.env.NODE_ENV === 'production' && !db.prepare('SELECT 1 FROM users LIMIT 1').get()) {
+    const username = process.env.INITIAL_ADMIN_USERNAME;
+    const password = process.env.INITIAL_ADMIN_PASSWORD;
+    if (!validCredentials(username, password)) throw new Error('La base no tiene usuarios. Configurá INITIAL_ADMIN_USERNAME e INITIAL_ADMIN_PASSWORD para crear el primero.');
+    db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(username, passwordHash(password));
+  }
   app.use('/api', (req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     const origin = req.get('origin');
